@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MacroCalc | Calculadora de Macronutrientes e TDEE</title>
-    <meta name="description" content="Calcule seu gasto calórico diário (TDEE) e a distribuição ideal de proteínas, gorduras e carboidratos para emagrecer, manter ou ganhar massa muscular.">
-    <meta name="keywords" content="calculadora de macros, tdee, calcular macros, dieta, emagrecer, ganhar massa, proteína, carboidrato">
+    <meta name="description" content="Calcule seu gasto calórico diário (TDEE) e a distribuição ideal de proteínas, gorduras e carboidratos conforme as diretrizes atuais de nutrição.">
+    <meta name="keywords" content="calculadora de macros, tdee, calcular macros, dieta low-carb, dieta cetogênica, emagrecer, ganhar massa">
     
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -33,7 +33,6 @@
             margin: 0 auto;
         }
 
-        /* Card principal */
         .main-card {
             background: #1e293b;
             border-radius: 32px;
@@ -42,7 +41,6 @@
             border: 1px solid #334155;
         }
 
-        /* Header */
         .header {
             padding: 2rem 2rem 0 2rem;
             text-align: center;
@@ -76,7 +74,6 @@
             font-size: 0.9rem;
         }
 
-        /* Formulário */
         .form-section {
             padding: 2rem;
         }
@@ -131,7 +128,6 @@
             margin-top: 0.25rem;
         }
 
-        /* Grupos de botões (sexo, atividade, objetivo) */
         .button-group {
             display: flex;
             gap: 0.5rem;
@@ -166,7 +162,16 @@
             gap: 0.5rem;
         }
 
-        /* Resultados */
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 0.8rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            font-size: 0.75rem;
+            color: #fca5a5;
+        }
+
         .results-section {
             background: #0f172a;
             margin: 0 2rem 2rem 2rem;
@@ -238,7 +243,6 @@
             max-height: 200px;
         }
 
-        /* Botão copiar */
         .copy-btn {
             width: 100%;
             background: #10b981;
@@ -258,7 +262,6 @@
             transform: translateY(-2px);
         }
 
-        /* Footer */
         .footer {
             text-align: center;
             padding: 1.5rem;
@@ -267,7 +270,10 @@
             border-top: 1px solid #334155;
         }
 
-        /* Toast */
+        .footer strong {
+            color: #ef4444;
+        }
+
         .toast {
             position: fixed;
             bottom: 2rem;
@@ -301,7 +307,7 @@
     <div class="main-card">
         <div class="header">
             <h1>🥗 MacroCalc <span class="badge">TDEE + MACROS</span></h1>
-            <p class="subtitle">Calcule seu gasto calórico diário e a distribuição ideal de nutrientes</p>
+            <p class="subtitle">Calcule seu gasto calórico diário e a distribuição de nutrientes conforme as diretrizes atuais</p>
         </div>
 
         <div class="form-section">
@@ -346,6 +352,19 @@
                 <button class="option-btn" data-goal="lose">🔥 Emagrecer</button>
                 <button class="option-btn active" data-goal="maintain">⚖️ Manter peso</button>
                 <button class="option-btn" data-goal="gain">💪 Ganhar massa</button>
+            </div>
+
+            <!-- Tipo de Dieta -->
+            <div class="section-title" style="margin-top: 1.5rem;">🍽️ Tipo de Dieta</div>
+            <div class="button-group" id="dietGroup">
+                <button class="option-btn active" data-diet="standard">Convencional (45% Carbo)</button>
+                <button class="option-btn" data-diet="lowcarb">Low-Carb (20% Carbo)</button>
+                <button class="option-btn" data-diet="keto">Cetogênica (10% Carbo)</button>
+            </div>
+
+            <!-- Aviso para dietas restritivas -->
+            <div class="warning-box" id="dietWarning" style="display: none;">
+                ⚠️ <strong>Atenção:</strong> Dietas com restrição severa de carboidratos (Low-Carb, Cetogênica) devem ser realizadas sob acompanhamento profissional, especialmente para pessoas com diabetes, doenças renais ou hepáticas.
             </div>
         </div>
 
@@ -392,7 +411,8 @@
         </div>
 
         <div class="footer">
-            🔒 Cálculo baseado na fórmula Mifflin-St Jeor · Consulte um nutricionista para um plano personalizado
+            🔒 Cálculo baseado na fórmula Mifflin-St Jeor · Diretrizes atuais de nutrição (2025-2026)<br>
+            ⚠️ <strong>Importante:</strong> Este é um cálculo estimativo. Consulte um nutricionista para um plano alimentar personalizado.
         </div>
     </div>
 </div>
@@ -406,10 +426,12 @@
     const weightSlider = document.getElementById('weightSlider');
     const heightInput = document.getElementById('height');
     const heightSlider = document.getElementById('heightSlider');
+    const dietWarning = document.getElementById('dietWarning');
     
     let sex = 'male';
     let activityFactor = 1.375;
     let goal = 'maintain';
+    let diet = 'standard';
     
     // Elementos de resultado
     const tmbEl = document.getElementById('tmb');
@@ -430,6 +452,15 @@
             return (10 * weight) + (6.25 * height) - (5 * age) + 5;
         } else {
             return (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        }
+    }
+    
+    // Mostrar/Esconder aviso baseado na dieta
+    function updateDietWarning() {
+        if (diet === 'lowcarb' || diet === 'keto') {
+            dietWarning.style.display = 'block';
+        } else {
+            dietWarning.style.display = 'none';
         }
     }
     
@@ -464,23 +495,35 @@
         }
         const targetCalories = Math.round(tdee * goalMultiplier);
         
-        // Macros
-        // Proteínas: 2g por kg de peso (para quem treina, bom valor médio)
-        const proteinG = Math.round(weight * 2);
-        const proteinCal = proteinG * 4;
+        // Distribuição percentual por tipo de dieta
+        let proteinPercent, fatPercent, carbPercent;
         
-        // Gorduras: 25% das calorias alvo
-        const fatCal = targetCalories * 0.25;
+        switch(diet) {
+            case 'keto':
+                proteinPercent = 25;
+                fatPercent = 65;
+                carbPercent = 10;
+                break;
+            case 'lowcarb':
+                proteinPercent = 30;
+                fatPercent = 50;
+                carbPercent = 20;
+                break;
+            default: // standard
+                proteinPercent = 30;
+                fatPercent = 25;
+                carbPercent = 45;
+        }
+        
+        // Cálculo de macros em gramas
+        const proteinCal = targetCalories * (proteinPercent / 100);
+        const proteinG = Math.round(proteinCal / 4);
+        
+        const fatCal = targetCalories * (fatPercent / 100);
         const fatG = Math.round(fatCal / 9);
         
-        // Carboidratos: resto das calorias
-        const carbCal = targetCalories - (proteinCal + fatCal);
+        const carbCal = targetCalories * (carbPercent / 100);
         const carbG = Math.round(carbCal / 4);
-        
-        // Percentuais
-        const proteinPercent = Math.round((proteinCal / targetCalories) * 100);
-        const fatPercent = Math.round((fatCal / targetCalories) * 100);
-        const carbPercent = 100 - (proteinPercent + fatPercent);
         
         // Atualizar DOM
         tmbEl.textContent = Math.round(bmr).toLocaleString();
@@ -531,29 +574,34 @@
     
     // Copiar resultados
     function copyResults() {
+        const dietName = diet === 'standard' ? 'Convencional (45% Carbo)' : (diet === 'lowcarb' ? 'Low-Carb (20% Carbo)' : 'Cetogênica (10% Carbo)');
+        const goalName = goal === 'lose' ? 'Emagrecer (déficit 15%)' : (goal === 'maintain' ? 'Manter peso' : 'Ganhar massa (superávit 10%)');
+        
         const text = `
 📊 RESULTADOS MACROCALC 📊
 
-📌 Dados:
+📌 DADOS:
 • Idade: ${ageInput.value} anos
 • Peso: ${weightInput.value} kg
 • Altura: ${heightInput.value} cm
 • Sexo: ${sex === 'male' ? 'Masculino' : 'Feminino'}
 
-🔥 Calorias:
+🔥 CALORIAS:
 • TMB (basal): ${tmbEl.textContent} kcal/dia
 • TDEE (manter): ${tdeeEl.textContent} kcal/dia
 • Meta calórica: ${goalCaloriesEl.textContent} kcal/dia
 
-🥩 Macros diários:
-• Proteínas: ${proteinGEl.textContent}
-• Gorduras: ${fatGEl.textContent}
-• Carboidratos: ${carbGEl.textContent}
+🎯 OBJETIVO: ${goalName}
+🍽️ TIPO DE DIETA: ${dietName}
 
-🎯 Objetivo: ${goal === 'lose' ? 'Emagrecer' : goal === 'maintain' ? 'Manter peso' : 'Ganhar massa'}
+🥩 MACROS DIÁRIOS:
+• Proteínas: ${proteinGEl.textContent} (${proteinPercentEl.textContent})
+• Gorduras: ${fatGEl.textContent} (${fatPercentEl.textContent})
+• Carboidratos: ${carbGEl.textContent} (${carbPercentEl.textContent})
 
 ---
-Calculado em MacroCalc - Ferramenta gratuita
+Cálculo estimativo baseado na fórmula Mifflin-St Jeor.
+Consulte um nutricionista para um plano personalizado.
         `;
         
         navigator.clipboard.writeText(text).then(() => {
@@ -614,11 +662,23 @@ Calculado em MacroCalc - Ferramenta gratuita
             });
         });
         
+        // Tipo de Dieta
+        document.querySelectorAll('#dietGroup .option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#dietGroup .option-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                diet = btn.dataset.diet;
+                updateDietWarning();
+                calculateAll();
+            });
+        });
+        
         document.getElementById('copyResultsBtn').addEventListener('click', copyResults);
     }
     
     // Inicializar
     setupEventListeners();
+    updateDietWarning();
     calculateAll();
 </script>
 </body>
