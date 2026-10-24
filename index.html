@@ -1,685 +1,981 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MacroCalc | Calculadora de Macronutrientes e TDEE</title>
-    <meta name="description" content="Calcule seu gasto calórico diário (TDEE) e a distribuição ideal de proteínas, gorduras e carboidratos conforme as diretrizes atuais de nutrição.">
-    <meta name="keywords" content="calculadora de macros, tdee, calcular macros, dieta low-carb, dieta cetogênica, emagrecer, ganhar massa">
-    
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Calculadora de TDEE, macronutrientes e jejum intermitente baseada em evidências científicas.">
+<title>MacroCalc Pro | TDEE, Macros e Jejum Baseado em Evidências</title>
+<style>
+    :root {
+        --bg-primary: #0f172a;
+        --bg-card: #1e293b;
+        --bg-input: #334155;
+        --bg-input-focus: #475569;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --accent: #38bdf8;
+        --accent-hover: #0ea5e9;
+        --danger: #ef4444;
+        --danger-bg: rgba(239, 68, 68, 0.1);
+        --warning: #f59e0b;
+        --warning-bg: rgba(245, 158, 11, 0.1);
+        --success: #22c55e;
+        --border: rgba(255,255,255,0.08);
+        --border-error: #ef4444;
+        --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --transition: 0.2s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        min-height: 100vh;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+    .container { width: 100%; max-width: 900px; }
+    header { text-align: center; margin-bottom: 30px; }
+    h1 { font-size: 2rem; margin: 0; color: var(--accent); }
+    .subtitle { color: var(--text-secondary); margin: 8px 0 0; font-size: 0.9rem; }
+
+    .card {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+    .card h2 { margin-top: 0; font-size: 1.2rem; color: var(--text-primary); }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .form-group input[type="number"],
+    .form-group select {
+        background: var(--bg-input);
+        border: 2px solid transparent;
+        border-radius: var(--radius-md);
+        padding: 12px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        transition: border var(--transition), background var(--transition);
+        width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: var(--bg-input-focus);
+    }
+    .form-group input.invalid {
+        border-color: var(--border-error);
+        background: var(--danger-bg);
+    }
+    .error-msg {
+        color: #fca5a5;
+        font-size: 0.75rem;
+        min-height: 16px;
+        margin-top: 2px;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 5px;
+    }
+    .radio-pill {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+    .radio-pill + label {
+        background: var(--bg-input);
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        transition: all var(--transition);
+        border: 2px solid transparent;
+        user-select: none;
+    }
+    .radio-pill:focus + label {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+    .radio-pill:checked + label {
+        background: var(--accent);
+        color: var(--bg-primary);
+        font-weight: 600;
+    }
+
+    .btn-calc {
+        width: 100%;
+        padding: 15px;
+        background: var(--accent);
+        color: var(--bg-primary);
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background var(--transition), transform var(--transition);
+    }
+    .btn-calc:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-calc:active:not(:disabled) { transform: scale(0.98); }
+    .btn-calc:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-calc:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .result-box {
+        background: var(--bg-input);
+        padding: 15px;
+        border-radius: var(--radius-md);
+        text-align: center;
+    }
+    .result-box h3 {
+        margin: 0;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .result-box p {
+        margin: 6px 0 0;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--accent);
+    }
+    .result-box.macro-p { border-left: 4px solid #ef4444; }
+    .result-box.macro-f { border-left: 4px solid #eab308; }
+    .result-box.macro-c { border-left: 4px solid #22c55e; }
+
+    .chart-container {
+        position: relative;
+        height: 260px;
+        max-width: 360px;
+        margin: 20px auto 0;
+    }
+
+    .alert {
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        margin-top: 12px;
+        border-left: 4px solid;
+    }
+    .alert-warning {
+        background: var(--warning-bg);
+        border-color: var(--warning);
+        color: #fcd34d;
+    }
+    .alert-danger {
+        background: var(--danger-bg);
+        border-color: var(--danger);
+        color: #fca5a5;
+    }
+    .alert-info {
+        background: rgba(56, 189, 248, 0.08);
+        border-color: var(--accent);
+        color: #7dd3fc;
+    }
+    .alert strong { display: block; margin-bottom: 4px; }
+
+    .info-badge {
+        display: inline-block;
+        background: rgba(56, 189, 248, 0.15);
+        color: var(--accent);
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--success);
+        color: #052e16;
+        padding: 12px 24px;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(15, 23, 42, 0.3);
+        border-top-color: var(--bg-primary);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: 30px;
+        padding: 20px;
+    }
+
+    @media (max-width: 480px) {
+        body { padding: 12px; }
+        .card { padding: 18px; }
+        h1 { font-size: 1.5rem; }
+        .grid { grid-template-columns: 1fr 1fr; }
+        .results-grid { grid-template-columns: 1fr 1fr; }
+        .radio-pill + label { padding: 6px 12px; font-size: 0.8rem; }
+    }
+    @media (max-width: 360px) {
+        .grid { grid-template-columns: 1fr; }
+        .results-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
         }
+    }
 
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
-            font-family: system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif;
-            padding: 1.5rem;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    /* ============================================
+       MODAL DE AJUDA
+       ============================================ */
+    .btn-help {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--bg-primary);
+        border: none;
+        font-size: 1.4rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: transform var(--transition), background var(--transition);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-help:hover { background: var(--accent-hover); transform: scale(1.05); }
+    .btn-help:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
 
-        .container {
-            max-width: 1100px;
-            width: 100%;
-            margin: 0 auto;
-        }
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+        animation: fadeIn 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; }
 
-        .main-card {
-            background: #1e293b;
-            border-radius: 32px;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-            border: 1px solid #334155;
-        }
+    .modal {
+        background: var(--bg-card);
+        border-radius: var(--radius-lg);
+        max-width: 600px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        animation: slideUp 0.25s ease;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: var(--bg-card);
+        z-index: 1;
+    }
+    .modal-header h2 {
+        font-size: 1.2rem;
+        margin: 0;
+        color: var(--accent);
+    }
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background var(--transition);
+    }
+    .modal-close:hover { background: var(--bg-input); color: var(--text-primary); }
+    .modal-close:focus-visible { outline: 2px solid var(--accent); }
 
-        .header {
-            padding: 2rem 2rem 0 2rem;
-            text-align: center;
-        }
+    .modal-body {
+        padding: 24px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+    .modal-body h3 {
+        color: var(--text-primary);
+        font-size: 1rem;
+        margin: 20px 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body p { margin: 0 0 12px; font-size: 0.92rem; }
+    .modal-body ol, .modal-body ul {
+        margin: 0 0 12px 20px;
+        padding: 0;
+        font-size: 0.92rem;
+    }
+    .modal-body li { margin-bottom: 6px; }
+    .modal-body strong { color: var(--text-primary); }
+    .modal-body .tip {
+        background: var(--bg-input);
+        border-left: 3px solid var(--accent);
+        padding: 10px 14px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin-top: 12px;
+    }
 
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #f8fafc, #94a3b8);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            letter-spacing: -0.02em;
-        }
-
-        .badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #059669, #10b981);
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: white;
-            padding: 0.2rem 0.7rem;
-            border-radius: 999px;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-        }
-
-        .subtitle {
-            color: #94a3b8;
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .form-section {
-            padding: 2rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .input-group label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-group input, .input-group select {
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 16px;
-            padding: 0.8rem 1rem;
-            color: #f1f5f9;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .input-group input:focus, .input-group select:focus {
-            outline: none;
-            border-color: #10b981;
-        }
-
-        .input-group input[type="range"] {
-            padding: 0;
-            height: 6px;
-            cursor: pointer;
-        }
-
-        .range-value {
-            font-size: 0.85rem;
-            color: #10b981;
-            font-weight: 600;
-            margin-top: 0.25rem;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .option-btn {
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 40px;
-            padding: 0.6rem 1.2rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #94a3b8;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .option-btn.active {
-            background: #10b981;
-            border-color: #10b981;
-            color: white;
-        }
-
-        .section-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #e2e8f0;
-            margin-bottom: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .warning-box {
-            background: rgba(239, 68, 68, 0.1);
-            border-left: 4px solid #ef4444;
-            padding: 0.8rem;
-            border-radius: 12px;
-            margin: 1rem 0;
-            font-size: 0.75rem;
-            color: #fca5a5;
-        }
-
-        .results-section {
-            background: #0f172a;
-            margin: 0 2rem 2rem 2rem;
-            border-radius: 24px;
-            padding: 1.5rem;
-        }
-
-        .calories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .calorie-card {
-            text-align: center;
-            background: #1e293b;
-            border-radius: 20px;
-            padding: 1rem;
-        }
-
-        .calorie-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #10b981;
-        }
-
-        .calorie-label {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            margin-top: 0.25rem;
-        }
-
-        .macros-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
-
-        .macro-card {
-            background: #1e293b;
-            border-radius: 20px;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .macro-value {
-            font-size: 1.5rem;
-            font-weight: 800;
-        }
-
-        .macro-value.protein { color: #ef4444; }
-        .macro-value.fat { color: #facc15; }
-        .macro-value.carb { color: #3b82f6; }
-
-        .macro-label {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            margin-top: 0.25rem;
-        }
-
-        .chart-container {
-            max-width: 250px;
-            margin: 1rem auto;
-        }
-
-        canvas {
-            max-height: 200px;
-        }
-
-        .copy-btn {
-            width: 100%;
-            background: #10b981;
-            border: none;
-            border-radius: 40px;
-            padding: 0.9rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 1rem;
-        }
-
-        .copy-btn:hover {
-            background: #059669;
-            transform: translateY(-2px);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 1.5rem;
-            font-size: 0.7rem;
-            color: #475569;
-            border-top: 1px solid #334155;
-        }
-
-        .footer strong {
-            color: #ef4444;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #10b981;
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        .toast.show { opacity: 1; }
-
-        @media (max-width: 600px) {
-            body { padding: 0.75rem; }
-            .form-section { padding: 1rem; }
-            .results-section { margin: 0 1rem 1rem 1rem; }
-            .macros-grid { gap: 0.5rem; }
-            .macro-value { font-size: 1.1rem; }
-        }
-    </style>
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
 </head>
 <body>
 
 <div class="container">
-    <div class="main-card">
-        <div class="header">
-            <h1>🥗 MacroCalc <span class="badge">TDEE + MACROS</span></h1>
-            <p class="subtitle">Calcule seu gasto calórico diário e a distribuição de nutrientes conforme as diretrizes atuais</p>
+    <header>
+        <h1>MacroCalc Pro</h1>
+        <p class="subtitle">Calculadora baseada em evidências · Mifflin-St Jeor / Katch-McArdle</p>
+    </header>
+
+    <form id="calcForm" novalidate>
+        <div class="card">
+            <div class="grid">
+                <div class="form-group">
+                    <label for="age">📅 Idade (anos)</label>
+                    <input type="number" id="age" name="age" min="15" max="100" step="1" placeholder="Ex: 30" required aria-describedby="age-error">
+                    <span class="error-msg" id="age-error" role="alert"></span>
+                </div>
+                <div class="form-group">
+                    <label for="weight">⚖️ Peso (kg)</label>
+                    <input type="number" id="weight" name="weight" min="30" max="300" step="0.1" placeholder="Ex: 80" required aria-describedby="weight-error">
+                    <span class="error-msg" id="weight-error" role="alert"></span>
+                </div>
+                <div class="form-group">
+                    <label for="height">📏 Altura (cm)</label>
+                    <input type="number" id="height" name="height" min="100" max="230" step="0.1" placeholder="Ex: 175" required aria-describedby="height-error">
+                    <span class="error-msg" id="height-error" role="alert"></span>
+                </div>
+                <div class="form-group">
+                    <label for="bodyfat">% Gordura Corporal <span class="info-badge">Opcional</span></label>
+                    <input type="number" id="bodyfat" name="bodyfat" min="3" max="60" step="0.1" placeholder="Ex: 20" aria-describedby="bodyfat-error">
+                    <span class="error-msg" id="bodyfat-error" role="alert"></span>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label id="gender-label">🚻 Sexo biológico</label>
+                <div class="radio-group" role="radiogroup" aria-labelledby="gender-label">
+                    <input type="radio" name="gender" id="male" value="m" class="radio-pill" checked>
+                    <label for="male">Masculino</label>
+                    <input type="radio" name="gender" id="female" value="f" class="radio-pill">
+                    <label for="female">Feminino</label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label id="activity-label">🏃 Nível de atividade física</label>
+                <div class="radio-group" role="radiogroup" aria-labelledby="activity-label">
+                    <input type="radio" name="activity" id="act1" value="1.2" class="radio-pill" checked>
+                    <label for="act1">Sedentário</label>
+                    <input type="radio" name="activity" id="act2" value="1.375" class="radio-pill">
+                    <label for="act2">Leve (1-3x/sem)</label>
+                    <input type="radio" name="activity" id="act3" value="1.55" class="radio-pill">
+                    <label for="act3">Moderado (3-5x/sem)</label>
+                    <input type="radio" name="activity" id="act4" value="1.725" class="radio-pill">
+                    <label for="act4">Ativo (6-7x/sem)</label>
+                    <input type="radio" name="activity" id="act5" value="1.9" class="radio-pill">
+                    <label for="act5">Atleta / Braçal Extenuante</label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label id="goal-label">🎯 Objetivo</label>
+                <div class="radio-group" role="radiogroup" aria-labelledby="goal-label">
+                    <input type="radio" name="goal" id="goal1" value="cut" class="radio-pill" checked>
+                    <label for="goal1">🔥 Emagrecer (-20%)</label>
+                    <input type="radio" name="goal" id="goal2" value="maintain" class="radio-pill">
+                    <label for="goal2">⚖️ Manter</label>
+                    <input type="radio" name="goal" id="goal3" value="bulk" class="radio-pill">
+                    <label for="goal3">💪 Ganhar Massa (+15%)</label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label id="diet-label">🍽️ Tipo de dieta</label>
+                <div class="radio-group" role="radiogroup" aria-labelledby="diet-label">
+                    <input type="radio" name="diet" id="diet1" value="balanced" class="radio-pill" checked>
+                    <label for="diet1">Balanceada</label>
+                    <input type="radio" name="diet" id="diet2" value="lowcarb" class="radio-pill">
+                    <label for="diet2">Low Carb</label>
+                    <input type="radio" name="diet" id="diet3" value="keto" class="radio-pill">
+                    <label for="diet3">Cetogênica</label>
+                </div>
+                <div class="alert alert-warning" role="note">
+                    <strong>⚠️ Atenção clínica:</strong> Dietas cetogênicas são contraindicadas em gestação, diabetes tipo 1, insuficiência renal/hepática e uso de certos medicamentos (ex: SGLT2). Exigem acompanhamento profissional.
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label id="fast-label">⏱️ Jejum intermitente (janela de alimentação)</label>
+                <div class="radio-group" role="radiogroup" aria-labelledby="fast-label">
+                    <input type="radio" name="fast" id="fast0" value="0" class="radio-pill" checked>
+                    <label for="fast0">Sem jejum</label>
+                    <input type="radio" name="fast" id="fast12" value="12" class="radio-pill">
+                    <label for="fast12">12h</label>
+                    <input type="radio" name="fast" id="fast16" value="16" class="radio-pill">
+                    <label for="fast16">16h</label>
+                    <input type="radio" name="fast" id="fast20" value="20" class="radio-pill">
+                    <label for="fast20">20h (Warrior)</label>
+                    <input type="radio" name="fast" id="fast24" value="24" class="radio-pill">
+                    <label for="fast24">24h (OMAD)</label>
+                </div>
+                <div class="alert alert-info" role="note">
+                    <strong>📌 Nota clínica:</strong> Jejuis superiores a 24h são intervenções clínicas que não geram "macros diários" e exigem supervisão médica rigorosa (risco de desequilíbrio eletrolítico e síndrome de realimentação). Foram intencionalmente excluídos desta ferramenta.
+                </div>
+            </div>
+
+            <button type="submit" class="btn-calc" id="btnCalc">Calcular Metas</button>
+        </div>
+    </form>
+
+    <div class="card" id="resultsCard" style="display: none;" role="region" aria-live="polite" aria-atomic="true">
+        <h2>📊 Seus Resultados</h2>
+        <div class="results-grid">
+            <div class="result-box">
+                <h3>TMB (Basal)</h3>
+                <p id="resTMB">—</p>
+            </div>
+            <div class="result-box">
+                <h3>TDEE (Manutenção)</h3>
+                <p id="resTDEE">—</p>
+            </div>
+            <div class="result-box">
+                <h3>Meta Calórica</h3>
+                <p id="resCal">—</p>
+            </div>
+            <div class="result-box">
+                <h3>Janela de Alimentação</h3>
+                <p id="resWindow" style="font-size: 1rem;">—</p>
+            </div>
         </div>
 
-        <div class="form-section">
-            <!-- Dados pessoais -->
-            <div class="form-grid">
-                <div class="input-group">
-                    <label>📅 Idade (anos)</label>
-                    <input type="number" id="age" value="30" min="15" max="100" step="1">
-                </div>
-                <div class="input-group">
-                    <label>⚖️ Peso (kg)</label>
-                    <input type="range" id="weightSlider" min="30" max="180" step="1" value="75">
-                    <input type="number" id="weight" value="75" min="30" max="180" step="1">
-                </div>
-                <div class="input-group">
-                    <label>📏 Altura (cm)</label>
-                    <input type="range" id="heightSlider" min="100" max="220" step="1" value="175">
-                    <input type="number" id="height" value="175" min="100" max="220" step="1">
-                </div>
+        <h3 style="font-size: 1rem; margin-bottom: 12px;">Distribuição de Macronutrientes</h3>
+        <div class="results-grid">
+            <div class="result-box macro-p">
+                <h3>Proteínas</h3>
+                <p id="resP">—</p>
             </div>
-
-            <!-- Sexo -->
-            <div class="section-title">🚻 Sexo biológico</div>
-            <div class="button-group" id="sexGroup">
-                <button class="option-btn active" data-sex="male">Masculino</button>
-                <button class="option-btn" data-sex="female">Feminino</button>
+            <div class="result-box macro-f">
+                <h3>Gorduras</h3>
+                <p id="resF">—</p>
             </div>
-
-            <!-- Atividade física -->
-            <div class="section-title" style="margin-top: 1.5rem;">🏃 Nível de atividade física</div>
-            <div class="button-group" id="activityGroup">
-                <button class="option-btn" data-activity="1.2">Sedentário</button>
-                <button class="option-btn active" data-activity="1.375">Leve (1-3x/semana)</button>
-                <button class="option-btn" data-activity="1.55">Moderado (3-5x/semana)</button>
-                <button class="option-btn" data-activity="1.725">Ativo (6-7x/semana)</button>
-                <button class="option-btn" data-activity="1.9">Muito ativo (2x/dia)</button>
-            </div>
-
-            <!-- Objetivo -->
-            <div class="section-title" style="margin-top: 1.5rem;">🎯 Objetivo</div>
-            <div class="button-group" id="goalGroup">
-                <button class="option-btn" data-goal="lose">🔥 Emagrecer</button>
-                <button class="option-btn active" data-goal="maintain">⚖️ Manter peso</button>
-                <button class="option-btn" data-goal="gain">💪 Ganhar massa</button>
-            </div>
-
-            <!-- Tipo de Dieta -->
-            <div class="section-title" style="margin-top: 1.5rem;">🍽️ Tipo de Dieta</div>
-            <div class="button-group" id="dietGroup">
-                <button class="option-btn active" data-diet="standard">Convencional (45% Carbo)</button>
-                <button class="option-btn" data-diet="lowcarb">Low-Carb (20% Carbo)</button>
-                <button class="option-btn" data-diet="keto">Cetogênica (10% Carbo)</button>
-            </div>
-
-            <!-- Aviso para dietas restritivas -->
-            <div class="warning-box" id="dietWarning" style="display: none;">
-                ⚠️ <strong>Atenção:</strong> Dietas com restrição severa de carboidratos (Low-Carb, Cetogênica) devem ser realizadas sob acompanhamento profissional, especialmente para pessoas com diabetes, doenças renais ou hepáticas.
+            <div class="result-box macro-c">
+                <h3>Carboidratos</h3>
+                <p id="resC">—</p>
             </div>
         </div>
 
-        <!-- Resultados -->
-        <div class="results-section" id="resultsSection">
-            <div class="calories-grid">
-                <div class="calorie-card">
-                    <div class="calorie-value" id="tmb">0</div>
-                    <div class="calorie-label">TMB (basal)</div>
-                </div>
-                <div class="calorie-card">
-                    <div class="calorie-value" id="tdee">0</div>
-                    <div class="calorie-label">TDEE (manter)</div>
-                </div>
-                <div class="calorie-card">
-                    <div class="calorie-value" id="goalCalories">0</div>
-                    <div class="calorie-label">Meta calórica</div>
-                </div>
-            </div>
-
-            <div class="macros-grid">
-                <div class="macro-card">
-                    <div class="macro-value protein" id="proteinG">0g</div>
-                    <div class="macro-label">🥩 Proteínas</div>
-                    <div id="proteinPercent" style="font-size:0.7rem; color:#94a3b8;">0%</div>
-                </div>
-                <div class="macro-card">
-                    <div class="macro-value fat" id="fatG">0g</div>
-                    <div class="macro-label">🧈 Gorduras</div>
-                    <div id="fatPercent" style="font-size:0.7rem; color:#94a3b8;">0%</div>
-                </div>
-                <div class="macro-card">
-                    <div class="macro-value carb" id="carbG">0g</div>
-                    <div class="macro-label">🍚 Carboidratos</div>
-                    <div id="carbPercent" style="font-size:0.7rem; color:#94a3b8;">0%</div>
-                </div>
-            </div>
-
-            <div class="chart-container">
-                <canvas id="macrosChart"></canvas>
-            </div>
-
-            <button class="copy-btn" id="copyResultsBtn">📋 Copiar resultados</button>
+        <div class="chart-container">
+            <canvas id="macroChart" role="img" aria-label="Gráfico de rosca mostrando a distribuição percentual de proteínas, gorduras e carboidratos na sua dieta"></canvas>
         </div>
 
-        <div class="footer">
-            🔒 Cálculo baseado na fórmula Mifflin-St Jeor · Diretrizes atuais de nutrição (2025-2026)<br>
-            ⚠️ <strong>Importante:</strong> Este é um cálculo estimativo. Consulte um nutricionista para um plano alimentar personalizado.
+        <div id="clinicalNotes"></div>
+    </div>
+
+    <footer>
+        🔒 Fórmulas: Mifflin-St Jeor (1990) e Katch-McArdle (1996) · Dados não substituem avaliação profissional
+    </footer>
+</div>
+
+<!-- BOTÃO FLUTUANTE DE AJUDA -->
+<button class="btn-help" id="btnHelp" aria-label="Abrir descrição e como usar" title="Descrição e Como Usar">?</button>
+
+<!-- MODAL DE AJUDA -->
+<div class="modal-overlay" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="helpTitle">📘 MacroCalc — Descrição e Como Usar</h2>
+            <button class="modal-close" id="btnCloseHelp" aria-label="Fechar">×</button>
+        </div>
+        <div class="modal-body">
+            <h3>🎯 O que é</h3>
+            <p>Calculadora de <strong>gasto calórico diário (TDEE)</strong>, <strong>distribuição de macronutrientes</strong> e <strong>jejum intermitente</strong>, baseada em fórmulas científicas validadas.</p>
+
+            <h3>📐 Fórmulas utilizadas</h3>
+            <ul>
+                <li><strong>Mifflin-St Jeor (1990):</strong> padrão-ouro para população geral</li>
+                <li><strong>Katch-McArdle (1996):</strong> mais precisa se você informar seu % de gordura corporal</li>
+            </ul>
+
+            <h3>🚀 Como usar</h3>
+            <ol>
+                <li>Preencha <strong>idade, peso, altura</strong> e sexo</li>
+                <li>(Opcional) Informe o <strong>% de gordura</strong> para maior precisão</li>
+                <li>Selecione seu <strong>nível de atividade</strong> realista</li>
+                <li>Escolha o <strong>objetivo</strong> (emagrecer, manter, ganhar massa)</li>
+                <li>Selecione o <strong>tipo de dieta</strong> (balanceada, low carb, cetogênica)</li>
+                <li>Defina a <strong>janela de jejum</strong> (opcional, máx 24h)</li>
+                <li>Clique em <strong>"Calcular Metas"</strong></li>
+            </ol>
+
+            <h3>📊 O que você recebe</h3>
+            <ul>
+                <li><strong>TMB:</strong> calorias que seu corpo gasta em repouso</li>
+                <li><strong>TDEE:</strong> gasto calórico total diário</li>
+                <li><strong>Meta calórica:</strong> ajustada ao seu objetivo</li>
+                <li><strong>Macros:</strong> gramas de proteínas, gorduras e carboidratos</li>
+                <li><strong>Janela de alimentação:</strong> horário de comida vs jejum</li>
+            </ul>
+
+            <div class="tip">
+                <strong>⚠️ Importante:</strong> Esta ferramenta é educativa. Resultados são estimativas e não substituem avaliação de nutricionista ou médico. Jejuis acima de 24h e dietas cetogênicas exigem acompanhamento profissional.
+            </div>
         </div>
     </div>
 </div>
 
-<div id="toast" class="toast">✅ Resultados copiados!</div>
+<div class="toast" id="toast" role="status" aria-live="polite">✅ Resultados copiados!</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-    // Elementos DOM
-    const ageInput = document.getElementById('age');
-    const weightInput = document.getElementById('weight');
-    const weightSlider = document.getElementById('weightSlider');
-    const heightInput = document.getElementById('height');
-    const heightSlider = document.getElementById('heightSlider');
-    const dietWarning = document.getElementById('dietWarning');
-    
-    let sex = 'male';
-    let activityFactor = 1.375;
-    let goal = 'maintain';
-    let diet = 'standard';
-    
-    // Elementos de resultado
-    const tmbEl = document.getElementById('tmb');
-    const tdeeEl = document.getElementById('tdee');
-    const goalCaloriesEl = document.getElementById('goalCalories');
-    const proteinGEl = document.getElementById('proteinG');
-    const fatGEl = document.getElementById('fatG');
-    const carbGEl = document.getElementById('carbG');
-    const proteinPercentEl = document.getElementById('proteinPercent');
-    const fatPercentEl = document.getElementById('fatPercent');
-    const carbPercentEl = document.getElementById('carbPercent');
-    
-    let chart = null;
-    
-    // Função para calcular TMB (Mifflin-St Jeor)
-    function calculateBMR(weight, height, age, sex) {
-        if (sex === 'male') {
-            return (10 * weight) + (6.25 * height) - (5 * age) + 5;
+'use strict';
+
+const LIMITS = Object.freeze({
+    age: { min: 15, max: 100 },
+    weight: { min: 30, max: 300 },
+    height: { min: 100, max: 230 },
+    bodyfat: { min: 3, max: 60 },
+    minCalories: { m: 1500, f: 1200 }
+});
+
+function validateNumber(value, limits, fieldName, required = true) {
+    if (value === '' || value === null || value === undefined) {
+        return required
+            ? { valid: false, value: null, error: `${fieldName} é obrigatório` }
+            : { valid: true, value: null, error: '' };
+    }
+    const num = Number(value);
+    if (Number.isNaN(num) || !Number.isFinite(num)) {
+        return { valid: false, value: null, error: `${fieldName} inválido` };
+    }
+    if (num < limits.min || num > limits.max) {
+        return {
+            valid: false,
+            value: null,
+            error: `Deve estar entre ${limits.min} e ${limits.max}`
+        };
+    }
+    return { valid: true, value: num, error: '' };
+}
+
+function mifflinStJeor(weight, height, age, gender) {
+    const base = (10 * weight) + (6.25 * height) - (5 * age);
+    return base + (gender === 'm' ? 5 : -161);
+}
+
+function katchMcArdle(weight, bodyfatPercent) {
+    const lbm = weight * (1 - bodyfatPercent / 100);
+    return 370 + (21.6 * lbm);
+}
+
+function calculateTMB(inputs) {
+    if (inputs.bodyfat !== null && inputs.bodyfat > 0) {
+        return { value: katchMcArdle(inputs.weight, inputs.bodyfat), formula: 'Katch-McArdle' };
+    }
+    return { value: mifflinStJeor(inputs.weight, inputs.height, inputs.age, inputs.gender), formula: 'Mifflin-St Jeor' };
+}
+
+function distributeMacros(targetCal, diet) {
+    const CAL_P = 4, CAL_F = 9, CAL_C = 4;
+    let p, f, c;
+
+    switch (diet) {
+        case 'balanced':
+            p = (targetCal * 0.30) / CAL_P;
+            f = (targetCal * 0.30) / CAL_F;
+            c = (targetCal * 0.40) / CAL_C;
+            break;
+        case 'lowcarb':
+            p = (targetCal * 0.35) / CAL_P;
+            f = (targetCal * 0.40) / CAL_F;
+            c = (targetCal * 0.25) / CAL_C;
+            break;
+        case 'keto':
+            c = Math.min(30, (targetCal * 0.05) / CAL_C);
+            p = (targetCal * 0.25) / CAL_P;
+            const calFromPC = (p * CAL_P) + (c * CAL_C);
+            f = (targetCal - calFromPC) / CAL_F;
+            break;
+        default:
+            throw new Error(`Dieta desconhecida: ${diet}`);
+    }
+
+    return {
+        protein: Math.max(0, Math.round(p)),
+        fat: Math.max(0, Math.round(f)),
+        carbs: Math.max(0, Math.round(c))
+    };
+}
+
+function validateForm() {
+    const fields = [
+        { id: 'age', limits: LIMITS.age, name: 'Idade', required: true },
+        { id: 'weight', limits: LIMITS.weight, name: 'Peso', required: true },
+        { id: 'height', limits: LIMITS.height, name: 'Altura', required: true },
+        { id: 'bodyfat', limits: LIMITS.bodyfat, name: '% Gordura', required: false }
+    ];
+
+    const results = {};
+    let allValid = true;
+
+    fields.forEach(field => {
+        const input = document.getElementById(field.id);
+        const errorEl = document.getElementById(`${field.id}-error`);
+        const validation = validateNumber(input.value, field.limits, field.name, field.required);
+
+        results[field.id] = validation.value;
+
+        if (!validation.valid) {
+            input.classList.add('invalid');
+            errorEl.textContent = validation.error;
+            allValid = false;
         } else {
-            return (10 * weight) + (6.25 * height) - (5 * age) - 161;
+            input.classList.remove('invalid');
+            errorEl.textContent = '';
         }
+    });
+
+    if (!allValid) return null;
+
+    results.gender = document.querySelector('input[name="gender"]:checked').value;
+    results.activity = parseFloat(document.querySelector('input[name="activity"]:checked').value);
+    results.goal = document.querySelector('input[name="goal"]:checked').value;
+    results.diet = document.querySelector('input[name="diet"]:checked').value;
+    results.fastHours = parseInt(document.querySelector('input[name="fast"]:checked').value, 10);
+
+    if (!['m', 'f'].includes(results.gender)) throw new Error('Gênero inválido');
+    if (Number.isNaN(results.activity)) throw new Error('Atividade inválida');
+    if (!['cut', 'maintain', 'bulk'].includes(results.goal)) throw new Error('Objetivo inválido');
+    if (!['balanced', 'lowcarb', 'keto'].includes(results.diet)) throw new Error('Dieta inválida');
+    if (results.fastHours < 0 || results.fastHours > 24) throw new Error('Jejum inválido');
+
+    return results;
+}
+
+function executeCalculation(inputs) {
+    const tmbResult = calculateTMB(inputs);
+    const tmb = tmbResult.value;
+    const tdee = tmb * inputs.activity;
+
+    let targetCal = tdee;
+    if (inputs.goal === 'cut') targetCal = tdee * 0.80;
+    if (inputs.goal === 'bulk') targetCal = tdee * 1.15;
+
+    const minCal = LIMITS.minCalories[inputs.gender];
+    let calFloorWarning = null;
+    if (targetCal < minCal) {
+        calFloorWarning = `A meta calculada (${Math.round(targetCal)} kcal) está abaixo do piso de segurança de ${minCal} kcal para ${inputs.gender === 'm' ? 'homens' : 'mulheres'}. Ajustada para o mínimo seguro. Déficits mais agressivos devem ser acompanhados por profissional.`;
+        targetCal = minCal;
     }
-    
-    // Mostrar/Esconder aviso baseado na dieta
-    function updateDietWarning() {
-        if (diet === 'lowcarb' || diet === 'keto') {
-            dietWarning.style.display = 'block';
-        } else {
-            dietWarning.style.display = 'none';
-        }
+
+    const macros = distributeMacros(targetCal, inputs.diet);
+    const eatingWindow = 24 - inputs.fastHours;
+    const windowText = inputs.fastHours === 0
+        ? 'Livre'
+        : `${eatingWindow}h comida / ${inputs.fastHours}h jejum`;
+
+    return {
+        tmb: Math.round(tmb),
+        tdee: Math.round(tdee),
+        targetCal: Math.round(targetCal),
+        formula: tmbResult.formula,
+        window: windowText,
+        macros,
+        calFloorWarning,
+        inputs
+    };
+}
+
+function renderResults(results) {
+    const card = document.getElementById('resultsCard');
+    card.style.display = 'block';
+
+    document.getElementById('resTMB').textContent = `${results.tmb} kcal`;
+    document.getElementById('resTDEE').textContent = `${results.tdee} kcal`;
+    document.getElementById('resCal').textContent = `${results.targetCal} kcal`;
+    document.getElementById('resWindow').textContent = results.window;
+    document.getElementById('resP').textContent = `${results.macros.protein}g`;
+    document.getElementById('resF').textContent = `${results.macros.fat}g`;
+    document.getElementById('resC').textContent = `${results.macros.carbs}g`;
+
+    const notesEl = document.getElementById('clinicalNotes');
+    notesEl.innerHTML = '';
+
+    if (results.calFloorWarning) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning';
+        alert.setAttribute('role', 'alert');
+        alert.innerHTML = `<strong>⚠️ Piso calórico atingido</strong>${results.calFloorWarning}`;
+        notesEl.appendChild(alert);
     }
-    
-    // Calcular tudo
-    function calculateAll() {
-        const age = parseInt(ageInput.value);
-        const weight = parseFloat(weightInput.value);
-        const height = parseFloat(heightInput.value);
-        
-        // TMB
-        const bmr = calculateBMR(weight, height, age, sex);
-        
-        // TDEE (manter)
-        const tdee = bmr * activityFactor;
-        
-        // Ajuste por objetivo
-        let goalMultiplier = 1;
-        let goalName = '';
-        switch(goal) {
-            case 'lose':
-                goalMultiplier = 0.85; // déficit de 15%
-                goalName = 'Emagrecer';
-                break;
-            case 'maintain':
-                goalMultiplier = 1;
-                goalName = 'Manter';
-                break;
-            case 'gain':
-                goalMultiplier = 1.1; // superávit de 10%
-                goalName = 'Ganhar massa';
-                break;
-        }
-        const targetCalories = Math.round(tdee * goalMultiplier);
-        
-        // Distribuição percentual por tipo de dieta
-        let proteinPercent, fatPercent, carbPercent;
-        
-        switch(diet) {
-            case 'keto':
-                proteinPercent = 25;
-                fatPercent = 65;
-                carbPercent = 10;
-                break;
-            case 'lowcarb':
-                proteinPercent = 30;
-                fatPercent = 50;
-                carbPercent = 20;
-                break;
-            default: // standard
-                proteinPercent = 30;
-                fatPercent = 25;
-                carbPercent = 45;
-        }
-        
-        // Cálculo de macros em gramas
-        const proteinCal = targetCalories * (proteinPercent / 100);
-        const proteinG = Math.round(proteinCal / 4);
-        
-        const fatCal = targetCalories * (fatPercent / 100);
-        const fatG = Math.round(fatCal / 9);
-        
-        const carbCal = targetCalories * (carbPercent / 100);
-        const carbG = Math.round(carbCal / 4);
-        
-        // Atualizar DOM
-        tmbEl.textContent = Math.round(bmr).toLocaleString();
-        tdeeEl.textContent = Math.round(tdee).toLocaleString();
-        goalCaloriesEl.textContent = targetCalories.toLocaleString();
-        
-        proteinGEl.textContent = `${proteinG}g`;
-        fatGEl.textContent = `${fatG}g`;
-        carbGEl.textContent = `${carbG}g`;
-        
-        proteinPercentEl.textContent = `${proteinPercent}%`;
-        fatPercentEl.textContent = `${fatPercent}%`;
-        carbPercentEl.textContent = `${carbPercent}%`;
-        
-        // Atualizar gráfico
-        updateChart(proteinPercent, fatPercent, carbPercent);
+
+    if (results.inputs.diet === 'keto') {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-info';
+        alert.setAttribute('role', 'note');
+        alert.innerHTML = `<strong>🥑 Dieta Cetogênica</strong>Carboidratos limitados a no máximo 30g/dia para garantir o estado cetogênico. Monitore eletrólitos (sódio, potássio, magnésio) e hidratação.`;
+        notesEl.appendChild(alert);
     }
-    
-    // Gráfico de pizza
-    function updateChart(protein, fat, carb) {
-        const ctx = document.getElementById('macrosChart').getContext('2d');
-        if (chart) {
-            chart.destroy();
-        }
-        chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Proteínas', 'Gorduras', 'Carboidratos'],
-                datasets: [{
-                    data: [protein, fat, carb],
-                    backgroundColor: ['#ef4444', '#facc15', '#3b82f6'],
-                    borderWidth: 0,
-                    borderRadius: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', font: { size: 11 } }
+
+    if (results.inputs.fastHours >= 20) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-warning';
+        alert.setAttribute('role', 'note');
+        alert.innerHTML = `<strong>⏱️ Jejum prolongado diário</strong>Janelas de alimentação muito curtas dificultam o aporte adequado de proteínas e micronutrientes. Considere fracionar em mais refeições dentro da janela.`;
+        notesEl.appendChild(alert);
+    }
+
+    const formulaNote = document.createElement('div');
+    formulaNote.className = 'alert alert-info';
+    formulaNote.innerHTML = `<strong>📐 Fórmula utilizada:</strong> ${results.formula}${results.formula === 'Katch-McArdle' ? ' (baseada na sua massa magra informada)' : ' (estimativa populacional — considere informar % de gordura para maior precisão)'}`;
+    notesEl.appendChild(formulaNote);
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderChart(results.macros);
+    persistResults(results);
+}
+
+let macroChartInstance = null;
+
+function renderChart(macros) {
+    if (typeof Chart === 'undefined') {
+        setTimeout(() => renderChart(macros), 100);
+        return;
+    }
+
+    const ctx = document.getElementById('macroChart').getContext('2d');
+    if (macroChartInstance) macroChartInstance.destroy();
+
+    macroChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Proteínas', 'Gorduras', 'Carboidratos'],
+            datasets: [{
+                data: [macros.protein, macros.fat, macros.carbs],
+                backgroundColor: ['#ef4444', '#eab308', '#22c55e'],
+                borderColor: '#1e293b',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#f8fafc',
+                        padding: 15,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => ` ${context.label}: ${context.raw}g`
                     }
                 }
             }
-        });
+        }
+    });
+}
+
+function persistResults(results) {
+    try {
+        const data = { ...results, timestamp: new Date().toISOString() };
+        localStorage.setItem('macrocalc_last', JSON.stringify(data));
+    } catch (e) {
+        console.warn('Não foi possível persistir resultados:', e);
     }
-    
-    // Copiar resultados
-    function copyResults() {
-        const dietName = diet === 'standard' ? 'Convencional (45% Carbo)' : (diet === 'lowcarb' ? 'Low-Carb (20% Carbo)' : 'Cetogênica (10% Carbo)');
-        const goalName = goal === 'lose' ? 'Emagrecer (déficit 15%)' : (goal === 'maintain' ? 'Manter peso' : 'Ganhar massa (superávit 10%)');
-        
-        const text = `
-📊 RESULTADOS MACROCALC 📊
+}
 
-📌 DADOS:
-• Idade: ${ageInput.value} anos
-• Peso: ${weightInput.value} kg
-• Altura: ${heightInput.value} cm
-• Sexo: ${sex === 'male' ? 'Masculino' : 'Feminino'}
+document.getElementById('calcForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnCalc');
 
-🔥 CALORIAS:
-• TMB (basal): ${tmbEl.textContent} kcal/dia
-• TDEE (manter): ${tdeeEl.textContent} kcal/dia
-• Meta calórica: ${goalCaloriesEl.textContent} kcal/dia
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span>Calculando...';
 
-🎯 OBJETIVO: ${goalName}
-🍽️ TIPO DE DIETA: ${dietName}
+    setTimeout(() => {
+        try {
+            const inputs = validateForm();
+            if (!inputs) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                const firstInvalid = document.querySelector('input.invalid');
+                if (firstInvalid) firstInvalid.focus();
+                return;
+            }
 
-🥩 MACROS DIÁRIOS:
-• Proteínas: ${proteinGEl.textContent} (${proteinPercentEl.textContent})
-• Gorduras: ${fatGEl.textContent} (${fatPercentEl.textContent})
-• Carboidratos: ${carbGEl.textContent} (${carbPercentEl.textContent})
+            const results = executeCalculation(inputs);
+            renderResults(results);
+        } catch (error) {
+            console.error('Erro no cálculo:', error);
+            alert('Ocorreu um erro inesperado. Verifique os dados e tente novamente.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }, 300);
+});
 
----
-Cálculo estimativo baseado na fórmula Mifflin-St Jeor.
-Consulte um nutricionista para um plano personalizado.
-        `;
-        
-        navigator.clipboard.writeText(text).then(() => {
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        });
+['age', 'weight', 'height', 'bodyfat'].forEach(id => {
+    const input = document.getElementById(id);
+    input.addEventListener('input', () => {
+        const errorEl = document.getElementById(`${id}-error`);
+        if (input.value === '') {
+            input.classList.remove('invalid');
+            errorEl.textContent = '';
+            return;
+        }
+        const limitsMap = { age: LIMITS.age, weight: LIMITS.weight, height: LIMITS.height, bodyfat: LIMITS.bodyfat };
+        const names = { age: 'Idade', weight: 'Peso', height: 'Altura', bodyfat: '% Gordura' };
+        const validation = validateNumber(input.value, limitsMap[id], names[id], id !== 'bodyfat');
+        if (!validation.valid) {
+            input.classList.add('invalid');
+            errorEl.textContent = validation.error;
+        } else {
+            input.classList.remove('invalid');
+            errorEl.textContent = '';
+        }
+    });
+});
+
+// ============================================================
+// MODAL DE AJUDA
+// ============================================================
+(function initHelpModal() {
+    const btnOpen = document.getElementById('btnHelp');
+    const btnClose = document.getElementById('btnCloseHelp');
+    const overlay = document.getElementById('helpModal');
+    if (!btnOpen || !overlay) return;
+
+    let lastFocused = null;
+
+    function openModal() {
+        lastFocused = document.activeElement;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => btnClose.focus(), 50);
     }
-    
-    // Event listeners
-    function setupEventListeners() {
-        // Sincronizar sliders
-        weightSlider.addEventListener('input', () => {
-            weightInput.value = weightSlider.value;
-            calculateAll();
-        });
-        weightInput.addEventListener('input', () => {
-            weightSlider.value = weightInput.value;
-            calculateAll();
-        });
-        heightSlider.addEventListener('input', () => {
-            heightInput.value = heightSlider.value;
-            calculateAll();
-        });
-        heightInput.addEventListener('input', () => {
-            heightSlider.value = heightInput.value;
-            calculateAll();
-        });
-        ageInput.addEventListener('input', calculateAll);
-        
-        // Sexo
-        document.querySelectorAll('#sexGroup .option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#sexGroup .option-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                sex = btn.dataset.sex;
-                calculateAll();
-            });
-        });
-        
-        // Atividade
-        document.querySelectorAll('#activityGroup .option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#activityGroup .option-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activityFactor = parseFloat(btn.dataset.activity);
-                calculateAll();
-            });
-        });
-        
-        // Objetivo
-        document.querySelectorAll('#goalGroup .option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#goalGroup .option-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                goal = btn.dataset.goal;
-                calculateAll();
-            });
-        });
-        
-        // Tipo de Dieta
-        document.querySelectorAll('#dietGroup .option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#dietGroup .option-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                diet = btn.dataset.diet;
-                updateDietWarning();
-                calculateAll();
-            });
-        });
-        
-        document.getElementById('copyResultsBtn').addEventListener('click', copyResults);
+
+    function closeModal() {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        if (lastFocused) lastFocused.focus();
     }
-    
-    // Inicializar
-    setupEventListeners();
-    updateDietWarning();
-    calculateAll();
+
+    btnOpen.addEventListener('click', openModal);
+    btnClose.addEventListener('click', closeModal);
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const focusable = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    });
+})();
 </script>
+
 </body>
 </html>
